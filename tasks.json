@@ -1,0 +1,72 @@
+[
+    {
+        "task": "Climb Mount Everest",
+        "done": false,
+        "priority": "high",
+        "category": "work",
+        "due_date": "2026-05-09"
+    },
+    {
+        "task": "Cooking",
+        "done": false,
+        "priority": "high",
+        "category": "personal",
+        "due_date": null
+    },
+    {
+        "task": "Sleep",
+        "done": false,
+        "priority": "high",
+        "category": "personal",
+        "due_date": "2026-04-30"
+    },
+    {
+        "task": "Dancing",
+        "done": false,
+        "priority": "low",
+        "category": "work",
+        "due_date": null
+    },
+    {
+        "task": "Gardening",
+        "done": false,
+        "priority": "low",
+        "category": "personal",
+        "due_date": null
+    },
+    {
+        "task": "Learning",
+        "done": true,
+        "priority": "high",
+        "category": "work",
+        "due_date": "2026-04-27"
+    },
+    {
+        "task": "Walking",
+        "done": true,
+        "priority": "high",
+        "category": "personal",
+        "due_date": null
+    },
+    {
+        "task": "Go To Church",
+        "done": true,
+        "priority": "high",
+        "category": "personal",
+        "due_date": "2026-04-25"
+    },
+    {
+        "task": "Reading",
+        "done": true,
+        "priority": "low",
+        "category": "personal",
+        "due_date": "2026-04-29"
+    },
+    {
+        "task": "Play sports",
+        "done": true,
+        "priority": "low",
+        "category": "personal",
+        "due_date": null
+    }
+]

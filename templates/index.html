@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Task Manager</title>
+
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" href="/static/icon-192.png">
+
+<style>
+/* =========================
+   🎨 THEME VARIABLES
+========================= */
+
+body.light {
+    --bg: #f4f6f8;
+    --text: #000;
+    --card-bg: #ffffff;
+    --border: #ccc;
+    --button-bg: #e0e0e0;
+    --button-text: #000;
+    --accent: #007bff;
+}
+
+body.dark {
+    --bg: #1e1e1e;
+    --text: #ffffff;
+    --card-bg: #2c2c2c;
+    --border: #444;
+    --button-bg: #3a3a3a;
+    --button-text: #fff;
+    --accent: #4dabf7;
+}
+
+body.blue {
+    --bg: #e6f0ff;
+    --text: #003366;
+    --card-bg: #ffffff;
+    --border: #99c2ff;
+    --button-bg: #cce0ff;
+    --button-text: #003366;
+    --accent: #0056b3;
+}
+
+/* =========================
+   🌐 GLOBAL STYLING
+========================= */
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 600px;
+    margin: 40px auto;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+}
+
+h1 {
+    text-align: center;
+}
+
+/* =========================
+   📥 FORM
+========================= */
+
+form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input, select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+}
+
+button {
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    background: var(--button-bg);
+    color: var(--button-text);
+    cursor: pointer;
+}
+
+/* =========================
+   ✨ TRANSITIONS
+========================= */
+button, li, .tag {
+    transition: all 0.2s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+button:active {
+    transform: scale(0.97);
+}
+
+li:hover {
+    transform: scale(1.01);
+    box-shadow: 0px 6px 14px rgba(0,0,0,0.15);
+}
+
+.tag:hover {
+    transform: scale(1.05);
+}
+
+.overdue {
+    background: #ffcccc;
+    border: 1px solid red;
+}
+
+
+/* =========================
+   🔘 FILTERS
+========================= */
+
+.filters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.filters div {
+    display: flex;
+    gap: 5px;
+}
+
+.active {
+    background-color: var(--accent);
+    color: white;
+    font-weight: bold;
+}
+
+/* =========================
+   📋 TASK LIST
+========================= */
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.task-text {
+    flex: 1;
+}
+
+.done {
+    text-decoration: line-through;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.actions button {
+    margin-left: 5px;
+}
+
+/* =========================
+   🏷 TAGS (priority/category/date)
+========================= */
+
+.tag {
+    font-size: 12px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+    color: #222;   /* always readable dark text */
+    font-weight: 500;
+}
+
+.high { background: #ffb3b3; }      /* stronger red */
+.low { background: #b6f2b6; }       /* stronger green */
+
+.work { background: #b3d9ff; }
+.personal { background: #f0b3ff; }
+
+.upcoming { background: #b6f2b6; }
+.overdue { 
+    background: #ff9999;
+    border: 1px solid #cc0000;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+
+    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
+        <h1 style="margin:0;">Task Manager</h1>
+
+        <select onchange="changeTheme(this.value)">
+            <option value="light">🌞 Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="blue">🌊 Blue</option>
+        </select>
+    </div>
+
+<form action="/add" method="post">
+    <input type="text" name="task" placeholder="Enter task" required>
+
+    <select name="priority">
+        <option value="high">High</option>
+        <option value="low">Low</option>
+    </select>
+
+    <select name="category">
+        <option value="work">Work</option>
+        <option value="personal">Personal</option>
+    </select>
+
+    <input type="date" name="due_date">
+
+    <button type="submit">➕ Add</button>
+</form>
+
+<div class="filters">
+
+    <!-- Status Filters -->
+    <div>
+        <a href="/?filter=&category={{ current_category or '' }}">
+            <button class="{% if not current_filter %}active{% endif %}">All</button>
+        </a>
+
+        <a href="/?filter=pending&category={{ current_category or '' }}">
+            <button class="{% if current_filter == 'pending' %}active{% endif %}">Pending</button>
+        </a>
+
+        <a href="/?filter=completed&category={{ current_category or '' }}">
+            <button class="{% if current_filter == 'completed' %}active{% endif %}">Completed</button>
+        </a>
+    </div>
+
+    <!-- Category Filters -->
+    <div>
+        <a href="/?category=&filter={{ current_filter or '' }}">
+            <button class="{% if not current_category %}active{% endif %}">All</button>
+        </a>
+
+        <a href="/?category=work&filter={{ current_filter or '' }}">
+            <button class="{% if current_category == 'work' %}active{% endif %}">Work</button>
+        </a>
+
+        <a href="/?category=personal&filter={{ current_filter or '' }}">
+            <button class="{% if current_category == 'personal' %}active{% endif %}">Personal</button>
+        </a>
+    </div>
+
+</div>
+
+<ul>
+    {% for i, t in tasks %}
+        <li>
+
+            <div class="task-text {% if t.done %}done{% endif %}">
+                {{ t.task }}
+
+                <span class="tag {{ t.priority }}">{{ t.priority }}</span>
+                <span class="tag {{ t.category }}">{{ t.category }}</span>
+                {% if t.due_date %}
+                    <span class="tag {{ t.due_status }}">
+                        {{ t.due_date }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="actions">
+                <a href="/toggle/{{ i }}">
+                    <button>{% if t.done %}↩️ Undo{% else %}✔️ Done{% endif %}</button>
+                </a>
+
+                <a href="/delete/{{ i }}">
+                    <button>🗑 Delete</button>
+                </a>
+            </div>
+
+        </li>
+    {% endfor %}
+</ul>
+
+</div>
+
+<script>
+function changeTheme(theme) {
+    document.body.className = theme;
+    localStorage.setItem("theme", theme);
+}
+
+window.onload = function() {
+    const saved = localStorage.getItem("theme") || "light";
+    document.body.className = saved;
+
+    // ✅ set dropdown value
+    document.querySelector("select").value = saved;
+}
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+        .then(function(reg) {
+            console.log("✅ Service Worker Registered");
+        })
+        .catch(function(err) {
+            console.error("❌ SW Error:", err);
+        });
+    });
+}
+</script>
+
+</div>
+
+</body>
+</html>
+
