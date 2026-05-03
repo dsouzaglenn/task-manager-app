@@ -155,7 +155,7 @@ def add():
         done=False,
         priority=priority,
         category=category,
-        due_date=due_date if due_date else None
+        due_date=due_date if due_date else None,
         user_id=session["user_id"]
     )
 
