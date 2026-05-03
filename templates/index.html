@@ -54,7 +54,7 @@ body {
 }
 
 .container {
-    width: 600px;
+    width: 720px;
     margin: 40px auto;
     background: var(--card-bg);
     padding: 20px;
@@ -292,11 +292,11 @@ li {
             </div>
 
             <div class="actions">
-                <a href="/toggle/{{ i }}">
+                <a href="/toggle/{{ t.id }}">
                     <button>{% if t.done %}↩️ Undo{% else %}✔️ Done{% endif %}</button>
                 </a>
 
-                <a href="/delete/{{ i }}">
+                <a href="/delete/{{ t.id }}">
                     <button>🗑 Delete</button>
                 </a>
             </div>
