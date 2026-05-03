@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect, make_response
+from flask import Flask, render_template, request, redirect, make_response, session
 import json
 import os
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
 app = Flask(__name__)
+
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
 database_url = os.environ.get("DATABASE_URL")
 
@@ -17,6 +19,11 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
 
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task = db.Column(db.String(200), nullable=False)
@@ -24,7 +31,7 @@ class Task(db.Model):
     priority = db.Column(db.String(10))
     category = db.Column(db.String(20))
     due_date = db.Column(db.String(20))
-
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 def sort_tasks(tasks):
     priority_order = {"high": 1, "low": 2}
@@ -42,9 +49,47 @@ def sw():
     response.headers["Cache-Control"] = "no-store"
     return response
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+
+        user = User(email=email, password=password)
+        db.session.add(user)
+        db.session.commit()
+
+        session["user_id"] = user.id
+        return redirect("/")
+
+    return render_template("register.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+
+        user = User.query.filter_by(email=email, password=password).first()
+
+        if user:
+            session["user_id"] = user.id
+            return redirect("/")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
 @app.route("/")
 def index():
-    tasks = Task.query.all()
+
+    if "user_id" not in session:
+        return redirect("/login")
+
+    tasks = Task.query.filter_by(user_id=session["user_id"]).all()
 
     filter_type = request.args.get("filter")
     category_filter = request.args.get("category")
@@ -111,6 +156,7 @@ def add():
         priority=priority,
         category=category,
         due_date=due_date if due_date else None
+        user_id=session["user_id"]
     )
 
     db.session.add(new_task)
@@ -123,7 +169,7 @@ def add():
 def delete(task_id):
     task = db.session.get(Task, task_id)
 
-    if task:
+    if task and task.user_id == session["user_id"]:
         db.session.delete(task)
         db.session.commit()
 
@@ -134,15 +180,13 @@ def delete(task_id):
 def toggle(task_id):
     task = db.session.get(Task, task_id)
 
-    if task:
+    if task and task.user_id == session["user_id"]:
         task.done = not task.done
         db.session.commit()
 
     return redirect("/")
 
 
-with app.app_context():
-    db.create_all()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
