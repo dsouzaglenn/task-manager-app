@@ -213,15 +213,26 @@ li {
 <div class="container">
 
 
-    <div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
+<div style="display:flex; justify-content: space-between; align-items:center; margin-bottom:10px;">
+    
+    <div>
         <h1 style="margin:0;">Task Manager</h1>
+        <small>👤 {{ user.email }}</small>
+    </div>
 
+    <div style="display:flex; gap:10px; align-items:center;">
         <select onchange="changeTheme(this.value)">
             <option value="light">🌞 Light</option>
             <option value="dark">🌙 Dark</option>
             <option value="blue">🌊 Blue</option>
         </select>
+
+        <a href="/logout">
+            <button>🚪 Logout</button>
+        </a>
     </div>
+
+</div>
 
 <form action="/add" method="post">
     <input type="text" name="task" placeholder="Enter task" required>

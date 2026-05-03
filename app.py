@@ -3,6 +3,7 @@ import json
 import os
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -23,6 +24,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    tasks = db.relationship("Task", backref="user", lazy=True)
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,36 +53,47 @@ def sw():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    error = None
     if request.method == "POST":
         email = request.form["email"]
         password = request.form["password"]
 
-        user = User(email=email, password=password)
-        db.session.add(user)
-        db.session.commit()
+        existing = User.query.filter_by(email=email).first()
 
-        session["user_id"] = user.id
-        return redirect("/")
+        if existing:
+            error = "User already exists"
+        else:
+            hashed = generate_password_hash(password)
 
-    return render_template("register.html")
+            user = User(email=email, password=hashed)
+            db.session.add(user)
+            db.session.commit()
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
-
-        user = User.query.filter_by(email=email, password=password).first()
-
-        if user:
             session["user_id"] = user.id
             return redirect("/")
 
-    return render_template("login.html")
+    return render_template("register.html", error=error)
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    error = None
+    if request.method == "POST":
+        email = request.form["email"]
+        password = request.form["password"]
+
+        user = User.query.filter_by(email=email).first()
+
+        if user and check_password_hash(user.password, password):
+            session["user_id"] = user.id
+            return redirect("/")
+        else:
+            error = "Invalid email or password"
+
+    return render_template("login.html", error=error)
 
 @app.route("/logout")
 def logout():
-    session.clear()
+    session.pop("user_id", None)
     return redirect("/login")
 
 @app.route("/")
@@ -88,6 +101,8 @@ def index():
 
     if "user_id" not in session:
         return redirect("/login")
+    
+    user = db.session.get(User, session["user_id"])
 
     tasks = Task.query.filter_by(user_id=session["user_id"]).all()
 
@@ -135,7 +150,8 @@ def index():
             "index.html",
             tasks=enumerate(filtered_tasks),
             current_filter=filter_type,
-            current_category=category_filter
+            current_category=category_filter,
+            user=user
         )
     )
 
@@ -144,7 +160,9 @@ def index():
 
 
 @app.route("/add", methods=["POST"])
+
 def add():
+    
     task_text = request.form["task"]
     priority = request.form["priority"]
     category = request.form["category"]
@@ -186,7 +204,8 @@ def toggle(task_id):
 
     return redirect("/")
 
-
+with app.app_context():
+    db.create_all()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
